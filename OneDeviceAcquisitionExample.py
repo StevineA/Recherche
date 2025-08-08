@@ -38,6 +38,37 @@ class NewDevice(plux.SignalsDev):
         if nSeq % 2000 == 0:
             print(nSeq, *data)
         return nSeq > self.duration * self.frequency
+        
+    def getConnectedSensors(self):
+        sensors = self.getSensors()
+
+        # Map values to sensor labels
+        SENSOR_CLASS = {
+            0: 'UNKNOWN', 1: 'EMG', 2: 'ECG', 3: 'LIGHT', 4: 'EDA', 5: 'BVP',
+            6: 'RESP', 7: 'XYZ', 8: 'SYNC', 9: 'EEG', 10: 'SYNC_ADAP', 11: 'SYNC_LED',
+            12: 'SYNC_SW', 13: 'USB', 14: 'FORCE', 15: 'TEMP', 16: 'VPROBE',
+            17: 'BREAKOUT', 18: 'OXIMETER', 19: 'GONI', 20: 'ACT', 21: 'EOG',
+            22: 'EGG', 23: 'ANSA', 26: 'OSL'
+        }
+
+        # Map values to color labels
+        SENSOR_COLOR = {
+            0: 'UNKNOWN', 1: 'BLACK', 2: 'GRAY', 3: 'WHITE', 4: 'DARKBLUE',
+            5: 'LIGHTBLUE', 6: 'RED', 7: 'GREEN', 8: 'YELLOW', 9: 'ORANGE'
+        }
+
+        port_mask = 0  # This is your dynamic bitmask
+
+        print("Connected sensors:")
+        for port, sensor in sensors.items():
+            print(f"\nSensor on port {port}:")
+            print(f"  Type/Class: {SENSOR_CLASS.get(sensor.clas, 'Unknown')} ({sensor.clas})")
+            print(f"  Serial #: {sensor.serialNum}")
+            print(f"  Color: {SENSOR_COLOR.get(sensor.color, 'Unknown')} ({sensor.color})")
+            # Build bitmask: bit position = port - 1
+            port_mask |= (1 << (port - 1))
+
+        return port_mask
 
 
 # example routines
@@ -65,6 +96,14 @@ def exampleAcquisition(
     device = NewDevice(address)
     device.duration = int(duration)  # Duration of acquisition in seconds.
     device.frequency = int(frequency)  # Samples per second.
+    
+    # Get Battery level
+    battery = device.getBattery()
+    print(f"\nBattery charging level at {int(battery)}%")
+
+    # Get port mask based on connected sensors
+    sensors = device.getConnectedSensors()
+    
     if isinstance(code, str):
         code = int(code, 16)  # From hexadecimal str to int
     device.start(device.frequency, code, 16)
